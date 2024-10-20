@@ -23,7 +23,11 @@
 uint64_t _get_current_timestamp_milliseconds() {
     uint64_t timestamp = 0;
 #ifdef _WIN32
-    timestamp = GetTickCount64();
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
+    uint64_t time = ((uint64_t)ft.dwLowDateTime | ((uint64_t)ft.dwHighDateTime << 32)) / 10;
+    timestamp = (time - EPOCH) / 10000;
 #else
     struct timespec ts;
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
