@@ -34,6 +34,7 @@ struct ChisCartridgeHardware {
 	uint64_t lastOffTS;
 	Thread delayOffThread;
 	Mutex  gpioMutex;
+	bool stopThread;
 	struct GBACartridgeHardware* gpio;
 };
 

@@ -44,6 +44,25 @@ void _sleep_cross_platform(unsigned int milliseconds) {
 #endif
 }
 
+#ifndef _WIN32
+void* _rumbleOff(void* context) {
+#else
+DWORD WINAPI _rumbleOff(LPVOID context) {
+#endif
+    struct ChisCartridgeHardware* hw = (struct ChisCartridgeHardware*)context;
+    // double check
+    while (!hw->stopThread)
+    {
+        if (hw->rumbleWaitCommit == 0 && hw->lastOffTS != 0 && _get_current_timestamp_milliseconds() - hw->lastOffTS > 400) {
+            MutexLock(&hw->gpioMutex);
+            GBAHardwareGPIOWrite(hw->gpio, 0xC4, 0);
+            MutexUnlock(&hw->gpioMutex);
+        }
+        _sleep_cross_platform(20);
+    }
+    return NULL;
+}
+
 void ChisCartridgeHardwareInit(struct ChisCartridgeHardware* hw, struct GBACartridgeHardware* gpio) {
     hw->gpio = gpio;
     hw->rumbleStatus = EZ_RUMBLE_NONE;
@@ -51,48 +70,30 @@ void ChisCartridgeHardwareInit(struct ChisCartridgeHardware* hw, struct GBACartr
     MutexInit(&hw->gpioMutex);
     hw->lastOffTS = 0;
     hw->rumbleWaitCommit = -1;
+    hw->stopThread = false;
+    ThreadCreate(&hw->delayOffThread, _rumbleOff, hw);
+    // set rumble gpio on
+    GBAHardwareGPIOWrite(hw->gpio, 0xC8, 1);
+    GBAHardwareGPIOWrite(hw->gpio, 0xC6, 8);
 }
 
 void ChisCartridgeHardwareDeinit(struct ChisCartridgeHardware* hw) {
     hw->gpio = NULL;
     hw->rumbleStatus = EZ_RUMBLE_NONE;
     hw->rumbleWaitCommit = -1;
+    hw->stopThread = true;
+    ThreadJoin(hw->delayOffThread);
     MutexDeinit(&hw->gpioMutex);
-}
-#ifndef _WIN32
-void* _rumbleOff(void* context) {
-#else
-DWORD WINAPI _rumbleOff(LPVOID context) {
-#endif
-    struct ChisCartridgeHardware* hw = (struct ChisCartridgeHardware*)context;
-    _sleep_cross_platform(200);
-    // double check
-    if (hw->rumbleWaitCommit == 0) {
-        MutexLock(&hw->gpioMutex);
-        GBAHardwareGPIOWrite(hw->gpio, 0xC4, 0);
-        MutexUnlock(&hw->gpioMutex);
-    }
-    return NULL;
 }
 
 void _commitRumble(struct ChisCartridgeHardware* hw) {
     uint64_t ts = _get_current_timestamp_milliseconds();
-    if (hw->delayOffThread != NULL && hw->lastOffTS != 0 && ts - hw->lastOffTS >= 200) {
-        ThreadJoin(hw->delayOffThread);
-        hw->delayOffThread = NULL;
-        hw->lastOffTS = 0;
-    }
     if (hw->rumbleWaitCommit == 1) {
         MutexLock(&hw->gpioMutex);
-        GBAHardwareGPIOWrite(hw->gpio, 0xC8, 1);
-        GBAHardwareGPIOWrite(hw->gpio, 0xC6, 8);
         GBAHardwareGPIOWrite(hw->gpio, 0xC4, 8);
         MutexUnlock(&hw->gpioMutex);
     } else if (hw->rumbleWaitCommit == 0) {
-        if (hw->delayOffThread == NULL) {
-            ThreadCreate(&hw->delayOffThread, _rumbleOff, hw);
-            hw->lastOffTS = ts;
-        }
+        hw->lastOffTS = ts;
     }
 }
 
@@ -139,6 +140,8 @@ void ChisCartridgeHardwareWrite32(struct ChisCartridgeHardware* hw, uint32_t add
                     hw->rumbleStatus = EZ_RUMBLE_DATA_5;
                 } else if (value8 == 8) {
                     hw->rumbleStatus = EZ_RUMBLE_DATA_5;
+                } else {
+                    hw->rumbleStatus = EZ_RUMBLE_NONE;
                 }
             } else {
                 hw->rumbleStatus = EZ_RUMBLE_NONE;
