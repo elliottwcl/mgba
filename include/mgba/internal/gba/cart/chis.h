@@ -15,7 +15,6 @@ CXX_GUARD_START
 #include <mgba/gba/interface.h>
 #include <mgba-util/threading.h>
 
-mLOG_DECLARE_CATEGORY(GBA_HW);
 
 enum EZRumbleStatus {
 	EZ_RUMBLE_NONE,

@@ -19,7 +19,6 @@
 #include <mgba/internal/gba/cart/chis.h>
 #include <mgba/internal/gba/cart/gpio.h>
 
-mLOG_DEFINE_CATEGORY(GBA_HW, "GBA Pak Hardware", "gba.hardware");
 
 uint64_t _get_current_timestamp_milliseconds() {
     uint64_t timestamp = 0;
