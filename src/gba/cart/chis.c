@@ -64,9 +64,12 @@ void ChisCartridgeHardwareDeinit(struct ChisCartridgeHardware* hw) {
 void* _rumbleOff(void* context) {
     struct ChisCartridgeHardware* hw = (struct ChisCartridgeHardware*)context;
     _sleep_cross_platform(200);
-    MutexLock(&hw->gpioMutex);
-    GBAHardwareGPIOWrite(hw->gpio, 0xC4, 0);
-    MutexUnlock(&hw->gpioMutex);
+    // double check
+    if (hw->rumbleWaitCommit == 0) {
+        MutexLock(&hw->gpioMutex);
+        GBAHardwareGPIOWrite(hw->gpio, 0xC4, 0);
+        MutexUnlock(&hw->gpioMutex);
+    }
     return NULL;
 }
 
