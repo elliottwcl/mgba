@@ -17,6 +17,7 @@ CXX_GUARD_START
 #include <mgba/internal/gba/savedata.h>
 #include <mgba/internal/gba/cart/ereader.h>
 #include <mgba/internal/gba/cart/gpio.h>
+#include <mgba/internal/gba/cart/chis.h>
 #include <mgba/internal/gba/cart/matrix.h>
 #include <mgba/internal/gba/cart/vfame.h>
 
@@ -107,6 +108,7 @@ struct GBAMemory {
 	uint16_t io[512];
 
 	struct GBACartridgeHardware hw;
+	struct ChisCartridgeHardware chishw;
 	struct GBASavedata savedata;
 	struct GBAVFameCart vfame;
 	struct GBAMatrix matrix;
