@@ -60,8 +60,11 @@ void ChisCartridgeHardwareDeinit(struct ChisCartridgeHardware* hw) {
     hw->rumbleWaitCommit = -1;
     MutexDeinit(&hw->gpioMutex);
 }
-
+#ifndef _WIN32
 void* _rumbleOff(void* context) {
+#else
+DWORD WINAPI _rumbleOff(LPVOID context) {
+#endif
     struct ChisCartridgeHardware* hw = (struct ChisCartridgeHardware*)context;
     _sleep_cross_platform(200);
     // double check
