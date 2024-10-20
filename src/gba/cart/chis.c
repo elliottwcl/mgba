@@ -41,7 +41,7 @@ uint64_t _get_current_timestamp_milliseconds() {
 }
 
 void _sleep_cross_platform(unsigned int milliseconds) {
-#ifdef _WIN32x
+#ifdef _WIN32
     Sleep(milliseconds);
 #else
     usleep(milliseconds * 1000);
