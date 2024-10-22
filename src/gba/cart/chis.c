@@ -79,7 +79,12 @@ DWORD WINAPI _rumbleOff(LPVOID context) {
             hw->lastOffTS = 0;
         }
         MutexUnlock(&hw->gpioMutex);
-        _sleep_cross_platform(1);
+        if (hw->lastOffTS != 0 && hw->lastOffTS > ts) {
+            // sleep until lastOffTS
+            _sleep_cross_platform(hw->lastOffTS - ts);
+        } else {
+            _sleep_cross_platform(10);
+        }
     }
     return NULL;
 }
