@@ -26,11 +26,7 @@
 uint64_t _get_current_timestamp_milliseconds() {
     uint64_t timestamp = 0;
 #ifdef _WIN32
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
-    uint64_t time = ((uint64_t)ft.dwLowDateTime | ((uint64_t)ft.dwHighDateTime << 32)) / 10;
-    timestamp = (time - EPOCH) / 10000;
+    timestamp = GetTickCount();
 #else
     struct timespec ts;
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -79,7 +75,7 @@ DWORD WINAPI _rumbleOff(LPVOID context) {
             hw->lastOffTS = 0;
         }
         MutexUnlock(&hw->gpioMutex);
-        if (hw->lastOffTS != 0 && hw->lastOffTS > ts) {
+        if (hw->lastOffTS != 0 && hw->lastOffTS > ts && hw->lastOffTS - ts > 10) {
             // sleep until lastOffTS
             _sleep_cross_platform(hw->lastOffTS - ts);
         } else {
