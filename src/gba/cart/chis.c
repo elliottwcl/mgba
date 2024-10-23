@@ -21,7 +21,7 @@
 #include <mgba/internal/gba/cart/chis.h>
 #include <mgba/internal/gba/cart/gpio.h>
 
-
+#define RUMBLE_DELAY_MS 200
 
 uint64_t _get_current_timestamp_milliseconds() {
     uint64_t timestamp = 0;
@@ -122,7 +122,7 @@ void _commitRumble(struct ChisCartridgeHardware* hw) {
         uint64_t ts = _get_current_timestamp_milliseconds();
         MutexLock(&hw->gpioMutex);
         _setRumble(hw, 1);
-        hw->lastOffTS = ts + 400;// 400ms delay ?
+        hw->lastOffTS = ts + RUMBLE_DELAY_MS;
         MutexUnlock(&hw->gpioMutex);
     }
 }
