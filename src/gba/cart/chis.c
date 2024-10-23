@@ -20,10 +20,11 @@
 #include <mgba/internal/gba/serialize.h>
 #include <mgba/internal/gba/cart/chis.h>
 #include <mgba/internal/gba/cart/gpio.h>
+#include <mgba-util/threading.h>
 
 #define RUMBLE_DELAY_MS 200
 
-uint64_t _get_current_timestamp_milliseconds() {
+static inline uint64_t _get_current_timestamp_milliseconds() {
     uint64_t timestamp = 0;
 #ifdef _WIN32
     timestamp = GetTickCount();
@@ -39,7 +40,7 @@ uint64_t _get_current_timestamp_milliseconds() {
     return timestamp;
 }
 
-void _sleep_cross_platform(unsigned int milliseconds) {
+static inline void _sleep_cross_platform(unsigned int milliseconds) {
 #ifdef _WIN32
     Sleep(milliseconds);
 #else
@@ -47,7 +48,7 @@ void _sleep_cross_platform(unsigned int milliseconds) {
 #endif
 }
 
-void _setRumble(struct ChisCartridgeHardware* hw, bool enable) {
+static inline void _setRumble(struct ChisCartridgeHardware* hw, bool enable) {
 	struct mRumble* rumble = hw->gpio->p->rumble;
 	if (!rumble) {
 		return;
@@ -58,11 +59,7 @@ void _setRumble(struct ChisCartridgeHardware* hw, bool enable) {
 	hw->gpio->p->lastRumble = currentTime;
 }
 
-#ifndef _WIN32
-void* _rumbleOff(void* context) {
-#else
-DWORD WINAPI _rumbleOff(LPVOID context) {
-#endif
+THREAD_ENTRY _rumbleOff(void* context) {
     struct ChisCartridgeHardware* hw = (struct ChisCartridgeHardware*)context;
     // double check
     while (!hw->stopThread)
@@ -82,13 +79,12 @@ DWORD WINAPI _rumbleOff(LPVOID context) {
             _sleep_cross_platform(10);
         }
     }
-    return NULL;
+    THREAD_EXIT(0);
 }
 
 void ChisCartridgeHardwareInit(struct ChisCartridgeHardware* hw, struct GBACartridgeHardware* gpio) {
     hw->gpio = gpio;
     hw->rumbleStatus = EZ_RUMBLE_NONE;
-    hw->delayOffThread = NULL;
     MutexInit(&hw->gpioMutex);
     hw->lastOffTS = 0;
     hw->rumbleWaitCommit = -1;
@@ -106,7 +102,7 @@ void ChisCartridgeHardwareDeinit(struct ChisCartridgeHardware* hw) {
     hw->rumbleWaitCommit = -1;
     hw->rumble = -1;
     hw->stopThread = true;
-    ThreadJoin(hw->delayOffThread);
+    ThreadJoin(&hw->delayOffThread);
     MutexDeinit(&hw->gpioMutex);
 }
 
