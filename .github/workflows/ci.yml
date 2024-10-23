@@ -74,7 +74,7 @@ jobs:
     - name: Release and Upload Assets
       uses: softprops/action-gh-release@v2
       with:
-        name: mGBA ${{ github.ref_name }} 中文版
+        name: mGBA ${{ github.ref_name }} 震动版
         files: mGBA-*.7z    
         body: |
           ![download](https://img.shields.io/github/downloads/${{ github.repository }}/${{ github.ref_name }}/total?label=Downloads)        
